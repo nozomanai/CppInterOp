@@ -8,7 +8,7 @@ add_dependencies(TestDownstreamLib CppInterOpTableGen)
 # don't drag in extra UND refs. target_compile_options so the flag
 # appends after add_llvm_library's `-UNDEBUG`.
 if(MSVC)
-  target_compile_definitions(TestDownstreamLib PRIVATE NDEBUG)
+  target_compile_options(TestDownstreamLib PRIVATE /DNDEBUG)
 else()
   target_compile_options(TestDownstreamLib PRIVATE -DNDEBUG)
 endif()
