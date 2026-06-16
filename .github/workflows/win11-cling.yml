@@ -14,7 +14,7 @@ concurrency:
 jobs:
   build-win11-cling:
     name: win11-msvc-cling-llvm20
-    runs-on: windows-11
+    runs-on: windows-2025
     strategy:
       fail-fast: false
 
