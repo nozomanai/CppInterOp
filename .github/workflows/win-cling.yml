@@ -1,4 +1,4 @@
-name: Win11 Cling Build
+name: Windows Cling Build
 
 on:
   # pull_request:
