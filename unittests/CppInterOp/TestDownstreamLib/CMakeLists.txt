@@ -7,7 +7,11 @@ add_dependencies(TestDownstreamLib CppInterOpTableGen)
 # NDEBUG mirrors cppyy's Release build so the JitCall::Invoke asserts
 # don't drag in extra UND refs. target_compile_options so the flag
 # appends after add_llvm_library's `-UNDEBUG`.
-target_compile_options(TestDownstreamLib PRIVATE -DNDEBUG)
+if(MSVC)
+  target_compile_definitions(TestDownstreamLib PRIVATE NDEBUG)
+else()
+  target_compile_options(TestDownstreamLib PRIVATE -DNDEBUG)
+endif()
 
 set_output_directory(TestDownstreamLib
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../bin/$<CONFIG>/
