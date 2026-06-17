@@ -35,6 +35,16 @@ jobs:
       run: |
         $env:ncpus = $([Environment]::ProcessorCount)
         $env:PWD_DIR = $PWD.Path
+        $env:LLVM_DIR = "$env:PWD_DIR\llvm-project"
+        $env:LLVM_BUILD_DIR = "$env:PWD_DIR\llvm-project\build"
+        $env:CLANG_REPL_BIN = "$env:LLVM_BUILD_DIR\bin\clang-repl.exe"
+
+        Write-Host "===== Clang / Clang-REPL build directories ====="
+        Write-Host ("PWD_DIR         = {0}" -f $env:PWD_DIR)
+        Write-Host ("LLVM_DIR        = {0}   (source)" -f $env:LLVM_DIR)
+        Write-Host ("LLVM_BUILD_DIR  = {0}" -f $env:LLVM_BUILD_DIR)
+        Write-Host ("CLANG_REPL_BIN  = {0}" -f $env:CLANG_REPL_BIN)
+        Write-Host "================================================"
 
         New-Item -ItemType Directory -Force -Path llvm-project\build | Out-Null
         Set-Location llvm-project\build
@@ -59,6 +69,16 @@ jobs:
         $env:LLVM_BUILD_DIR = "$env:PWD_DIR\llvm-project\build"
         $env:CB_PYTHON_DIR = "$env:PWD_DIR\cppyy-backend\python"
         $env:CPPINTEROP_DIR = "$env:CB_PYTHON_DIR\cppyy_backend"
+        $env:CLANG_REPL_BIN = "$env:LLVM_BUILD_DIR\bin\clang-repl.exe"
+
+        Write-Host "===== Exported environment variables ====="
+        Write-Host ("PWD_DIR         = {0}" -f $env:PWD_DIR)
+        Write-Host ("LLVM_DIR        = {0}" -f $env:LLVM_DIR)
+        Write-Host ("LLVM_BUILD_DIR  = {0}" -f $env:LLVM_BUILD_DIR)
+        Write-Host ("CB_PYTHON_DIR   = {0}" -f $env:CB_PYTHON_DIR)
+        Write-Host ("CPPINTEROP_DIR  = {0}" -f $env:CPPINTEROP_DIR)
+        Write-Host ("CLANG_REPL_BIN  = {0}" -f $env:CLANG_REPL_BIN)
+        Write-Host "==========================================="
 
         # Export for subsequent steps
         echo "LLVM_DIR=$env:LLVM_DIR" >> $env:GITHUB_ENV
@@ -98,5 +118,7 @@ jobs:
         path: |
           cppyy-backend/python/cppyy_backend
           build/lib
+          llvm-project/build/bin
+          llvm-project/build/lib
         if-no-files-found: error
         retention-days: 7
