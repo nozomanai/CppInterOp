@@ -102,12 +102,13 @@ jobs:
     #     cmake --build . --target check-cppinterop --parallel $env:ncpus
 
     - name: Upload build artifacts
-      if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
-        name: windows-cling-build-logs
+        name: cppinterop-windows-cling
         path: |
-          build/CMakeFiles/CMakeOutput.log
-          build/CMakeFiles/CMakeError.log
-          build/Testing/Temporary/
+          cppyy-backend/python/cppyy_backend
+          build/lib
+        if-no-files-found: error
         retention-days: 7
+
+    
