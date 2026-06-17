@@ -127,9 +127,12 @@ jobs:
         path: |
           cppyy-backend/python/cppyy_backend
           build/lib
+          build/bin
           llvm-project/build/bin
           llvm-project/build/lib
           cling-build-manifest.txt
+          cling/build/bin
+          cling/build/lib
         if-no-files-found: error
         retention-days: 7
 
