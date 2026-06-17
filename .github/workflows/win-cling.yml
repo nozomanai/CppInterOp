@@ -45,7 +45,7 @@ jobs:
               -DLLVM_EXTERNAL_PROJECTS=cling `
               -DLLVM_EXTERNAL_CLING_SOURCE_DIR="$env:CLING_DIR" `
               -DLLVM_TARGETS_TO_BUILD="host;NVPTX" `
-              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_BUILD_TYPE=Debug `
               -DLLVM_ENABLE_ASSERTIONS=ON `
               -DCLANG_ENABLE_STATIC_ANALYZER=OFF `
               -DCLANG_ENABLE_ARCMT=OFF `
@@ -89,6 +89,7 @@ jobs:
               -DClang_DIR="$env:LLVM_DIR\build\lib\cmake\clang" `
               -DCMAKE_INSTALL_PREFIX="$env:CPPINTEROP_DIR" `
               -DBUILD_SHARED_LIBS=ON `
+              -DCMAKE_BUILD_TYPE=Debug `
               ..
 
         cmake --build . --target install --parallel $env:ncpus
