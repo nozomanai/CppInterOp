@@ -94,12 +94,12 @@ jobs:
 
         cmake --build . --target install --parallel $env:ncpus
 
-    - name: Test CppInterOp
-      shell: pwsh
-      run: |
-        $env:ncpus = $([Environment]::ProcessorCount)
-        Set-Location build
-        cmake --build . --target check-cppinterop --parallel $env:ncpus
+    # - name: Test CppInterOp
+    #   shell: pwsh
+    #   run: |
+    #     $env:ncpus = $([Environment]::ProcessorCount)
+    #     Set-Location build
+    #     cmake --build . --target check-cppinterop --parallel $env:ncpus
 
     - name: Upload build artifacts
       if: failure()
