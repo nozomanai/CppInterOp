@@ -1,0 +1,102 @@
+name: Windows Clang-REPL Build
+
+on:
+  # pull_request:
+  #   branches: [main]
+  # push:
+  #   branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-clang-repl:
+    name: windows-msvc-clang-repl-llvm22
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Checkout CppInterOp
+      uses: actions/checkout@v6
+
+    - name: Clone cppyy-backend
+      run: |
+        git clone --depth=1 https://github.com/compiler-research/cppyy-backend.git
+
+    - name: Clone LLVM (release/22.x)
+      run: |
+        git clone --depth=1 --branch release/22.x https://github.com/llvm/llvm-project.git
+
+    - name: Build Clang and Clang-REPL
+      shell: pwsh
+      run: |
+        $env:ncpus = $([Environment]::ProcessorCount)
+        $env:PWD_DIR = $PWD.Path
+
+        New-Item -ItemType Directory -Force -Path llvm-project\build | Out-Null
+        Set-Location llvm-project\build
+
+        cmake -DLLVM_ENABLE_PROJECTS=clang `
+              -DLLVM_TARGETS_TO_BUILD="host;NVPTX" `
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+              -DLLVM_ENABLE_ASSERTIONS=ON `
+              -DCLANG_ENABLE_STATIC_ANALYZER=OFF `
+              -DCLANG_ENABLE_ARCMT=OFF `
+              -DCLANG_ENABLE_FORMAT=OFF `
+              -DCLANG_ENABLE_BOOTSTRAP=OFF `
+              ../llvm
+
+        cmake --build . --target clang clang-repl --parallel $env:ncpus
+
+    - name: Set environment variables
+      shell: pwsh
+      run: |
+        $env:PWD_DIR = $PWD.Path
+        $env:LLVM_DIR = "$env:PWD_DIR\llvm-project"
+        $env:LLVM_BUILD_DIR = "$env:PWD_DIR\llvm-project\build"
+        $env:CB_PYTHON_DIR = "$env:PWD_DIR\cppyy-backend\python"
+        $env:CPPINTEROP_DIR = "$env:CB_PYTHON_DIR\cppyy_backend"
+
+        # Export for subsequent steps
+        echo "LLVM_DIR=$env:LLVM_DIR" >> $env:GITHUB_ENV
+        echo "LLVM_BUILD_DIR=$env:LLVM_BUILD_DIR" >> $env:GITHUB_ENV
+        echo "CB_PYTHON_DIR=$env:CB_PYTHON_DIR" >> $env:GITHUB_ENV
+        echo "CPPINTEROP_DIR=$env:CPPINTEROP_DIR" >> $env:GITHUB_ENV
+        echo "PWD_DIR=$env:PWD_DIR" >> $env:GITHUB_ENV
+
+    - name: Build CppInterOp
+      shell: pwsh
+      run: |
+        $env:ncpus = $([Environment]::ProcessorCount)
+
+        New-Item -ItemType Directory -Force -Path build | Out-Null
+        Set-Location build
+
+        cmake -DBUILD_SHARED_LIBS=ON `
+              -DLLVM_DIR="$env:LLVM_DIR\build\lib\cmake\llvm" `
+              -DClang_DIR="$env:LLVM_DIR\build\lib\cmake\clang" `
+              -DCMAKE_INSTALL_PREFIX="$env:CPPINTEROP_DIR" `
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+              ..
+
+        cmake --build . --target install --parallel $env:ncpus
+
+    # - name: Test CppInterOp
+    #   shell: pwsh
+    #   run: |
+    #     $env:ncpus = $([Environment]::ProcessorCount)
+    #     Set-Location build
+    #     cmake --build . --target check-cppinterop --parallel $env:ncpus
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v6
+      with:
+        name: cppinterop-windows-clang-repl
+        path: |
+          cppyy-backend/python/cppyy_backend
+          build/lib
+        if-no-files-found: error
+        retention-days: 7
