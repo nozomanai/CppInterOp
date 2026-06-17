@@ -68,8 +68,19 @@ set(BENCHMARK_INCLUDE_DIR ${source_dir}/include)
 file(MAKE_DIRECTORY ${BENCHMARK_INCLUDE_DIR})
 
 add_library(benchmark IMPORTED STATIC GLOBAL)
+if(CMAKE_CONFIGURATION_TYPES)
+  # Multi-config generators (Visual Studio, Xcode) place build output in a
+  # $<CONFIG> subdirectory, so IMPORTED_LOCATION must use a generator
+  # expression. Single-config generators (Ninja, Makefiles) put it directly
+  # in src/ without a config subdirectory.
+  set(_benchmark_imported_location
+    ${_benchmark_byproduct_binary_dir}/src/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX})
+else()
+  set(_benchmark_imported_location "${_benchmark_byproducts}")
+endif()
+
 set_target_properties(benchmark PROPERTIES
-  IMPORTED_LOCATION "${_benchmark_byproducts}"
+  IMPORTED_LOCATION "${_benchmark_imported_location}"
   INTERFACE_INCLUDE_DIRECTORIES "${BENCHMARK_INCLUDE_DIR}"
   )
 add_dependencies(benchmark googlebenchmark)

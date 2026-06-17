@@ -67,6 +67,18 @@ function(add_cppinterop_unittest name)
     target_link_libraries(${name} PRIVATE ${gtest_libs} ${link_pthreads_lib})
   endif()
   target_link_libraries(${name} PRIVATE clangCppInterOp)
+  if(WIN32 AND BUILD_SHARED_LIBS)
+    # LLVM's add_llvm_library links Clang/LLVM dependencies as PRIVATE, so
+    # they don't propagate from clangCppInterOp to its consumers. On Windows
+    # with BUILD_SHARED_LIBS=ON each LLVM/Clang component is a separate DLL;
+    # the test exe needs to link each DLL's import library to resolve symbols
+    # that the test code references directly through clang/LLVM headers.
+    get_target_property(_cppinterop_deps clangCppInterOp LINK_LIBRARIES)
+    if(_cppinterop_deps)
+      target_link_libraries(${name} PRIVATE ${_cppinterop_deps})
+    endif()
+    unset(_cppinterop_deps)
+  endif()
   if(EMSCRIPTEN)
     if (BUILD_SHARED_LIBS)
       target_compile_definitions(${name} PRIVATE "EMSCRIPTEN_SHARED_LIBRARY")

@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-win11-cling:
-    name: win11-msvc-cling-llvm20
+  build-windows-cling:
+    name: windows-msvc-cling-llvm20
     runs-on: windows-2025
     strategy:
       fail-fast: false
@@ -104,7 +104,7 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: win11-cling-build-logs
+        name: windows-cling-build-logs
         path: |
           build/CMakeFiles/CMakeOutput.log
           build/CMakeFiles/CMakeError.log
