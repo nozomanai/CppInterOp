@@ -37,6 +37,15 @@ jobs:
         $env:ncpus = $([Environment]::ProcessorCount)
         $env:PWD_DIR = $PWD.Path
         $env:CLING_DIR = "$env:PWD_DIR\cling"
+        $env:LLVM_BUILD_DIR = "$env:PWD_DIR\llvm-project\build"
+        $env:CLING_BUILD_DIR = "$env:LLVM_BUILD_DIR\tools\cling"
+
+        Write-Host "===== Cling build directories ====="
+        Write-Host ("PWD_DIR          = {0}" -f $env:PWD_DIR)
+        Write-Host ("CLING_DIR        = {0}   (source)" -f $env:CLING_DIR)
+        Write-Host ("LLVM_BUILD_DIR   = {0}" -f $env:LLVM_BUILD_DIR)
+        Write-Host ("CLING_BUILD_DIR  = {0}   (built as LLVM external project)" -f $env:CLING_BUILD_DIR)
+        Write-Host "===================================="
 
         New-Item -ItemType Directory -Force -Path llvm-project\build | Out-Null
         Set-Location llvm-project\build
@@ -65,6 +74,16 @@ jobs:
         $env:CLING_BUILD_DIR = "$env:PWD_DIR\cling\build"
         $env:CB_PYTHON_DIR = "$env:PWD_DIR\cppyy-backend\python"
         $env:CPPINTEROP_DIR = "$env:CB_PYTHON_DIR\cppyy_backend"
+
+        Write-Host "===== Exported environment variables ====="
+        Write-Host ("PWD_DIR          = {0}" -f $env:PWD_DIR)
+        Write-Host ("LLVM_DIR         = {0}" -f $env:LLVM_DIR)
+        Write-Host ("CLING_DIR        = {0}" -f $env:CLING_DIR)
+        Write-Host ("CLING_BUILD_DIR  = {0}" -f $env:CLING_BUILD_DIR)
+        Write-Host ("CB_PYTHON_DIR    = {0}" -f $env:CB_PYTHON_DIR)
+        Write-Host ("CPPINTEROP_DIR   = {0}" -f $env:CPPINTEROP_DIR)
+        Write-Host "Note: actual Cling CMake config dir used by CppInterOp = $env:LLVM_DIR\build\tools\cling"
+        Write-Host "==========================================="
 
         # Export for subsequent steps
         echo "LLVM_DIR=$env:LLVM_DIR" >> $env:GITHUB_ENV
@@ -100,85 +119,6 @@ jobs:
     #     $env:ncpus = $([Environment]::ProcessorCount)
     #     Set-Location build
     #     cmake --build . --target check-cppinterop --parallel $env:ncpus
-
-    - name: Generate Cling build manifest
-      shell: pwsh
-      run: |
-        $env:PWD_DIR = $PWD.Path
-        $env:LLVM_DIR = "$env:PWD_DIR\llvm-project"
-        $env:CLING_DIR = "$env:PWD_DIR\cling"
-        $env:CB_PYTHON_DIR = "$env:PWD_DIR\cppyy-backend\python"
-        $env:CPPINTEROP_DIR = "$env:CB_PYTHON_DIR\cppyy_backend"
-        $manifestPath = "$env:PWD_DIR\cling-build-manifest.txt"
-
-        $header = @"
-# CppInterOp Windows Cling Build Manifest
-# Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
-# PWD_DIR     : $env:PWD_DIR
-# LLVM_DIR    : $env:LLVM_DIR
-# CLING_DIR   : $env:CLING_DIR
-# CB_PYTHON_DIR   : $env:CB_PYTHON_DIR
-# CPPINTEROP_DIR  : $env:CPPINTEROP_DIR
-
-"@
-        Set-Content -Path $manifestPath -Value $header -Encoding utf8
-
-        function Get-GitCommit($dir) {
-            if (Test-Path (Join-Path $dir '.git')) {
-                Push-Location $dir
-                $rev = git rev-parse HEAD 2>$null
-                $tag = git describe --tags --always 2>$null
-                Pop-Location
-                if ($tag) { "$rev  ($tag)" } else { "$rev" }
-            } else { '<not a git checkout>' }
-        }
-
-        '[GIT]' | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        "llvm-project : $(Get-GitCommit $env:LLVM_DIR)"   | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        "cling        : $(Get-GitCommit $env:CLING_DIR)"  | Out-File -FilePath $manifestPath -Append -Encoding utf8
-
-        $exts = @('*.dll', '*.lib', '*.pdb', '*.exe', '*.exp')
-
-        "[llvm-project/build/bin  ($($exts -join ', '))]" | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        if (Test-Path "$env:LLVM_DIR\build\bin") {
-            Get-ChildItem -Path "$env:LLVM_DIR\build\bin" -Recurse -File -Include $exts |
-                Select-Object FullName,
-                              @{N='Size(KB)';E={[int]($_.Length/1024)}},
-                              LastWriteTime |
-                Format-Table -AutoSize |
-                Out-String -Width 4096 |
-                Out-File -FilePath $manifestPath -Append -Encoding utf8
-        } else {
-            '(not found)' | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        }
-
-        "[llvm-project/build/lib  ($($exts -join ', '))]" | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        if (Test-Path "$env:LLVM_DIR\build\lib") {
-            Get-ChildItem -Path "$env:LLVM_DIR\build\lib" -Recurse -File -Include $exts |
-                Select-Object FullName,
-                              @{N='Size(KB)';E={[int]($_.Length/1024)}},
-                              LastWriteTime |
-                Format-Table -AutoSize |
-                Out-String -Width 4096 |
-                Out-File -FilePath $manifestPath -Append -Encoding utf8
-        } else {
-            '(not found)' | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        }
-
-        "[cppyy-backend/python/cppyy_backend  ($($exts -join ', '))]" | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        if (Test-Path $env:CPPINTEROP_DIR) {
-            Get-ChildItem -Path $env:CPPINTEROP_DIR -Recurse -File -Include $exts |
-                Select-Object FullName,
-                              @{N='Size(KB)';E={[int]($_.Length/1024)}},
-                              LastWriteTime |
-                Format-Table -AutoSize |
-                Out-String -Width 4096 |
-                Out-File -FilePath $manifestPath -Append -Encoding utf8
-        } else {
-            '(not found)' | Out-File -FilePath $manifestPath -Append -Encoding utf8
-        }
-
-        Write-Host "Manifest written: $manifestPath"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v6
