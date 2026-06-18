@@ -136,4 +136,13 @@ jobs:
         if-no-files-found: error
         retention-days: 7
 
+    - name: Upload build artifacts2
+      uses: actions/upload-artifact@v6
+      with:
+        name: cppinterop-windows-cling2
+        path: |
+          cling/build/RelWithDebInfo
+          llvm-project/build/RelWithDebInfo
+        if-no-files-found: error
+        retention-days: 7
     
